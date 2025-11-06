@@ -1,16 +1,24 @@
 import socket
 
-target = "127.0.0.1"
-port = 135
+def scan_port(target, port, timeout=0.5):
+    """Return True if open, False otherwise."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        res = s.connect_ex((target, port))
+        s.close()
+        return res == 0
+    except Exception:
+        return False
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.settimeout(1)
-
-result = sock.connect_ex((target, port))  # returns 0 if success, else error code
-
-if result == 0:
-    print(f"Port {port} is OPEN")
-else:
-    print(f"Port {port} is CLOSED")
-
-sock.close()
+if __name__ == "__main__":
+    target = "127.0.0.1"
+    ports = [22, 80, 135, 443]  # quick list you can edit
+    open_ports = []
+    for p in ports:
+        if scan_port(target, p):
+            print(f"[+] {p} OPEN")
+            open_ports.append(p)
+        else:
+            print(f"[-] {p} closed")
+    print("Open ports:", open_ports)
