@@ -117,6 +117,7 @@ tqdm,colorama,requests,tabulate
 
 This project connects my networking studies (CCNA) with practical cybersecurity programming experience as I prepare for CompTIA Security+.
 
+---
 
 ##⚠️ Ethical Note
 
