@@ -8,6 +8,12 @@ import time
 import json
 from typing import List, Tuple, Optional, Dict
 
+from colorama import init, Fore, Style
+from tqdm import tqdm
+
+# Initialize colorama
+init(autoreset=True)
+
 # Defaults / presets
 DEFAULT_WORKERS = 50
 DEFAULT_TIMEOUT = 0.4
@@ -17,6 +23,10 @@ PRESETS = {
     'common': '1-1024,3306,8080',
     'full': '1-65535'
 }
+
+# Common noisy Windows/local ports
+NOISY_PORTS = {17500, 6463, 7680, 7768, 49664, 49665, 49666, 49667, 49668,
+               49669, 49670, 49671, 49672, 49673}
 
 # ----------------------------
 # Port parsing
@@ -92,41 +102,29 @@ def scan_port_once(ip: str, port: int, timeout: float, banner_size: int) -> Opti
         return None
 
 # ----------------------------
-# Scanning core
+# Scanning core with progress
 # ----------------------------
-def scan_host(target: str, ports: List[int], workers: int, timeout: float, banner_size: int) -> Tuple[List[Tuple[int, str]], float]:
+def scan_host(target: str, ports: List[int], workers: int, timeout: float, banner_size: int, no_noisy: bool) -> Tuple[List[Tuple[int, str]], float]:
     target_ip = resolve_target(target)
     results: List[Tuple[int, str]] = []
-    total = len(ports)
-    checked = 0
     start = time.time()
 
     with ThreadPoolExecutor(max_workers=workers) as exe:
-        # Build futures with a simple for-loop for readability
-        futures_map = {}
-        for p in ports:
-            fut = exe.submit(scan_port_once, target_ip, p, timeout, banner_size)
-            futures_map[fut] = p
+        futures_map = {exe.submit(scan_port_once, target_ip, p, timeout, banner_size): p for p in ports}
 
-        # Process as they complete
-        for fut in as_completed(futures_map):
-            checked += 1
-            port = futures_map[fut]
+        for fut in tqdm(as_completed(futures_map), total=len(futures_map), desc="Scanning", unit="port"):
             try:
                 res = fut.result()
             except Exception:
                 res = None
             if res:
+                port, info = res
+                if no_noisy and port in NOISY_PORTS:
+                    continue
                 results.append(res)
-                # Human output printed by caller if desired
-                print(f"[+] {res[0]}/tcp open  -- {res[1]}")
-            # Lightweight progress update every ~10% or at end
-            if total <= 20 or checked % max(1, total // 10) == 0 or checked == total:
-                print(f"[i] Progress: {checked}/{total} ports checked")
 
     elapsed = time.time() - start
     results.sort()
-    print(f"[i] Scan completed in {elapsed:.2f}s — {len(results)} open ports found")
     return results, elapsed
 
 # ----------------------------
@@ -148,7 +146,7 @@ def build_json_payload(target: str, target_ip: str, ports_spec: str, ports_list:
 # CLI
 # ----------------------------
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Threaded TCP scanner with optional JSON output and file saving.")
+    p = argparse.ArgumentParser(description="Threaded TCP scanner with JSON output, colors, progress bar, and optional noisy port filtering.")
     p.add_argument('-t', '--target', required=True, help='Target hostname or IPv4 address.')
     p.add_argument('-p', '--ports', default='common', help='Ports: preset (fast|common|full) or list/range (22,80,1-1024).')
     p.add_argument('-w', '--workers', type=int, default=DEFAULT_WORKERS, help=f'Worker threads (default {DEFAULT_WORKERS}).')
@@ -157,6 +155,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument('--yes', action='store_true', help='Skip permission reminder.')
     p.add_argument('--json', action='store_true', help='Print JSON output after scan.')
     p.add_argument('-o', '--output', help='Save JSON results to file (path).')
+    p.add_argument('--no-noisy', action='store_true', help='Hide noisy Windows/local ports.')
     return p
 
 # ----------------------------
@@ -167,59 +166,55 @@ def main():
     args = parser.parse_args()
 
     if not args.yes:
-        print("[!] Only scan hosts you own or have explicit permission to test. Use --yes to skip this message.\n")
+        print(f"{Fore.YELLOW}[!] Only scan hosts you own or have explicit permission to test. Use --yes to skip this message.\n{Style.RESET_ALL}")
 
     # Parse ports
     try:
         ports = parse_ports(args.ports)
         if not ports:
-            print("No valid ports to scan. Exiting.")
+            print(f"{Fore.RED}[!] No valid ports to scan. Exiting.{Style.RESET_ALL}")
             return
     except Exception as e:
-        print(f"Error parsing ports: {e}")
+        print(f"{Fore.RED}[!] Error parsing ports: {e}{Style.RESET_ALL}")
         return
 
     # Resolve host
     try:
         target_ip = resolve_target(args.target)
     except Exception as e:
-        print(e)
+        print(f"{Fore.RED}[!] {e}{Style.RESET_ALL}")
         return
 
-    # Announce and scan
     print(f"Starting scan: {args.target} ({target_ip}), ports {ports[0]}-{ports[-1]} (count={len(ports)}), workers={args.workers}, timeout={args.timeout}")
-    found, elapsed = scan_host(args.target, ports, args.workers, args.timeout, args.banner_size)
 
-    # Human summary (always show, JSON printing optional)
+    found, elapsed = scan_host(args.target, ports, args.workers, args.timeout, args.banner_size, args.no_noisy)
+
+    # Human summary
     if not found:
-        print(f"\nNo open TCP ports found on {args.target} ({target_ip}).")
+        print(f"\n{Fore.RED}No open TCP ports found on {args.target} ({target_ip}).{Style.RESET_ALL}")
     else:
-        items = [f"{p}({info.split()[0] if info else 'open'})" for p, info in found[:10]]
+        items = [f"{Fore.GREEN}{p}{Style.RESET_ALL}({info.split()[0]})" for p, info in found[:10]]
         more = f" +{len(found)-10} more" if len(found) > 10 else ""
         print(f"\nSummary: {len(found)} open ports on {args.target} ({target_ip}): " + ", ".join(items) + more)
 
     # Build JSON payload
     if args.json or args.output:
-        meta = {
-            "workers": args.workers,
-            "timeout": args.timeout,
-            "banner_size": args.banner_size
-        }
+        meta = {"workers": args.workers, "timeout": args.timeout, "banner_size": args.banner_size, "no_noisy": args.no_noisy}
         payload = build_json_payload(args.target, target_ip, args.ports, ports, found, elapsed, meta)
 
-    # Print JSON to stdout only if requested
+    # JSON output
     if args.json:
         print("\n" + json.dumps(payload, indent=2))
 
-    # Save to file if requested
+    # Save JSON to file
     if args.output:
         try:
             with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2)
-            print(f"[i] Results saved to {args.output}")
+            print(f"{Fore.CYAN}[i] Results saved to {args.output}{Style.RESET_ALL}")
         except Exception as e:
-            print(f"[!] Failed to save results to {args.output}: {e}")
+            print(f"{Fore.RED}[!] Failed to save results to {args.output}: {e}{Style.RESET_ALL}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
