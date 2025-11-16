@@ -1,7 +1,7 @@
 # 🔍 Network Scanner  
 
 A fast, multi-threaded TCP port scanner written in **Python**.  
-This project demonstrates practical skills in socket programming, concurrency with `ThreadPoolExecutor`, and exporting scan results in **JSON/CSV** formats.  
+This project demonstrates practical skills in socket programming, concurrency with `ThreadPoolExecutor`, and exporting scan results in **JSON** format.  
 
 ✅ Built as part of my **CompTIA Security+** learning path.
 
@@ -16,7 +16,7 @@ This project demonstrates practical skills in socket programming, concurrency wi
 - Supports `common` preset ports and custom ranges (`1-1024`) or lists (`22,80,443`)  
 - Multi-threaded scanning (`--workers`) for high speed  
 - Adjustable socket `--timeout` for unreliable networks  
-- Export results to **text**, **JSON**, or **CSV** (`--output`)  
+- Export results to **JSON** (`--output`)  
 - Colored console output and progress bars using `colorama` + `tqdm`  
 - Severity notes for each open port for fast risk evaluation  
 - Lightweight, easy to read and extend  
@@ -82,18 +82,18 @@ tqdm,colorama,requests,tabulate
 ## 🧩 Usage examples
 ```bash
   # Scan common ports on localhost
-  python scanner.py --target 127.0.0.1 --ports common
+  py scanner.py --target 127.0.0.1 --ports common
   
   # Scan port range with custom workers and timeout
-  python scanner.py --target 192.168.1.1 --ports 1-1024 --workers 100 --timeout 0.5
+  py scanner.py --target 192.168.1.1 --ports 1-1024 --workers 100 --timeout 0.5
   
   # Save results to JSON
-  python scanner.py --target 127.0.0.1 --ports 22,80 --output results.json
+  py scanner.py --target 127.0.0.1 --ports 22,80 --output results.json
 ```
 
 ---
 
-##📄 JSON Output Example
+## 📄 JSON Output Example
   {
     "target": "127.0.0.1",
     "time": "2025-11-06T14:23:42",
@@ -119,7 +119,7 @@ This project connects my networking studies (CCNA) with practical cybersecurity 
 
 ---
 
-##⚠️ Ethical Note
+## ⚠️ Ethical Note
 
   Use this tool only on systems you own or have explicit permission to test.
   Unauthorized scanning may be illegal.
