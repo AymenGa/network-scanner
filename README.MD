@@ -18,7 +18,7 @@ This project demonstrates practical skills in socket programming, concurrency wi
 - Adjustable socket `--timeout` for unreliable networks  
 - Export results to **JSON** (`--output`)  
 - Colored console output and progress bars using `colorama` + `tqdm`  
-- Severity notes for each open port for fast risk evaluation  
+- Severity notes for each open port for fast risk evaluation  (`--min-severity`)
 - Lightweight, easy to read and extend  
 
 ---
@@ -35,7 +35,7 @@ This project demonstrates practical skills in socket programming, concurrency wi
 
 ## 🧪 Testing & Performance  
 
-- Verified CLI arguments (`--target`, `--ports`, `--workers`, `--timeout`, `--banner-size`, `--json`, `--output`)  
+- Verified CLI arguments (`--target`, `--ports`, `--workers`, `--timeout`, `--banner-size`, `--json`,`--output`,`--no-noisy`,`--min-severity`,`--report`)  
 - Performance benchmarked with 50–500 worker threads  
 - Verified JSON export and CSV output correctness  
 - Tested scanning unreachable hosts & closed ports  
@@ -89,6 +89,19 @@ tqdm,colorama,requests,tabulate
   
   # Save results to JSON
   py scanner.py --target 127.0.0.1 --ports 22,80 --output results.json
+
+  # Save a full text report
+  py scanner.py --target 192.168.1.10 --ports fast --report scan_report.txt
+
+  # Filter by minimum severity
+  py scanner.py --target 10.0.0.5 --min-severity medium
+
+  # Hide Windows noisy ports
+  py scanner.py --target 127.0.0.1 --no-noisy
+
+  # Show JSON output in terminal
+  py scanner.py --target scanme.nmap.org --json
+
 ```
 
 ---
