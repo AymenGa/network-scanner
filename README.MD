@@ -6,7 +6,6 @@ This project demonstrates practical skills in socket programming, concurrency wi
 ✅ Built as part of my **CompTIA Security+** learning path.
 
 ![Python](https://img.shields.io/badge/Python-3.14-blue?style=for-the-badge&logo=python&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-lightgrey?style=for-the-badge)
 
 ---
 
@@ -107,6 +106,7 @@ tqdm,colorama,requests,tabulate
 ---
 
 ## 📄 JSON Output Example
+```json
   {
     "target": "127.0.0.1",
     "time": "2025-11-06T14:23:42",
@@ -115,6 +115,7 @@ tqdm,colorama,requests,tabulate
       {"port": 80, "severity": "MEDIUM", "service": "http", "note": "Ensure HTTPS and updated server."}
     ]
   }
+```
 
 ---
 
@@ -147,6 +148,12 @@ This project connects my networking studies (CCNA) with practical cybersecurity 
   - Better testing suite (unit tests + CI)
 
 ---
+
+## License
+This project is provided for personal and educational use.
+Commercial use or redistribution is not allowed.
+Contact me for commercial licensing.
+
 
 ## 👤 Author
 Aymen Gasri — Computer Engineering Graduate (ISIMA Mahdia)
